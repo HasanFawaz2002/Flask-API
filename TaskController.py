@@ -5,8 +5,11 @@ def serialize_task(task):
     return {
         'id': task.id,
         'title': task.title,
-        'description': task.description, 
-        'completed': task.completed
+        'description': task.description,
+        'completed': task.completed,
+        'task_category': task.task_category,  
+        'task_priority': task.task_priority,  
+        'due_date':task.due_date
     }
     
     
@@ -31,10 +34,18 @@ def get_task_by_id(db, task_id):
     task_dict = serialize_task(task)
     return jsonify(task_dict)
 
+
 #Create task
-def create_task(db, title, description, completed):
+def create_task(db, title, description, completed, task_category, task_priority,due_date):
     try:
-        task = TasksModel(title=title, description=description, completed=completed)
+        task = TasksModel(
+            title=title,
+            description=description,
+            completed=completed,
+            task_category=task_category,
+            task_priority=task_priority,
+            due_date=due_date
+        )
         db.session.add(task)
         db.session.commit()
         task_dict = serialize_task(task)
@@ -57,15 +68,19 @@ def update_task(db, task_id, data):
         task.description = data['description']
     if 'completed' in data:
         task.completed = data['completed']
-
+    if 'task_category' in data:
+        task.task_category = data['task_category']
+    if 'task_priority' in data:
+        task.task_priority = data['task_priority']
+    if 'due_date' in data:
+        task.due_date = data['due_date']
     try:
         db.session.commit()
+        task_dict = serialize_task(task)
+        return task_dict
     except SQLAlchemyError as e:
         db.session.rollback()
         return jsonify({'message': str(e)}), 500
-
-    task_dict = serialize_task(task)
-    return task_dict
 
 
 #Delete Task

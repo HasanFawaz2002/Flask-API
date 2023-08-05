@@ -74,12 +74,17 @@ def get_single_task(task_id):
 def post_task():
     try:
         data = request.json
-        if not data or 'title' not in data or 'description' not in data or 'completed' not in data:
+        if not data or 'title' not in data or 'description' not in data or 'completed' not in data or 'task_category' not in data or 'task_priority' not in data or 'due_date' not in data:
             return jsonify({'message': 'Missing required data'}), 400
+
         title = data['title']
         description = data['description']
         completed = data['completed']
-        return create_task(db, title, description, completed)  
+        task_category = data['task_category']
+        task_priority = data['task_priority']
+        due_date = data['due_date']
+
+        return create_task(db, title, description, completed, task_category, task_priority,due_date)
     except Exception as e:
         return jsonify({'message': 'Error processing request', 'error': str(e)}), 500
     
