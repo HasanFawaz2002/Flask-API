@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify
-from sqlalchemy import create_engine, Column, Integer, String, Boolean
+from sqlalchemy import  Column, Integer, String, Boolean
 from sqlalchemy.ext.declarative import declarative_base
 from flask_sqlalchemy import SQLAlchemy
 
@@ -11,7 +11,8 @@ db = SQLAlchemy(app)
 Base = declarative_base()
 
 
-class TasksModel(db.Model):
+
+class TasksModel(Base):
     __tablename__ = 'tasks' 
     id = Column(Integer, primary_key=True, autoincrement=True)
     title = Column(String(255), nullable=False)
