@@ -5,6 +5,9 @@ from sqlalchemy import create_engine, Column, Integer, String, Boolean
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy_utils import database_exists, create_database
 from sqlalchemy.ext.declarative import declarative_base
+from TaskModel import TasksModel
+from TaskController import get_all_tasks, get_task_by_id, create_task, update_task, delete_task, delete_all_tasks  
+
 import psycopg2
 app = Flask(__name__)
 
@@ -12,19 +15,7 @@ db = SQLAlchemy(app)
 
 Base = declarative_base()
 
-class TasksModel(db.Model):
-    __tablename__ = 'tasks' 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    title = Column(String(255), nullable=False)
-    description = Column(String(255), nullable=False)
-    completed = Column(Boolean, nullable=False)
 
-    def __repr__(self):
-        return f"Task(id={self.id}, title={self.title}, description={self.description}, completed={self.completed})"
-    
-    @classmethod
-    def create_table(cls, engine):
-        Base.metadata.create_all(engine)
 
 url = "postgresql://postgres:hasan@localhost/userTaskManagement"
 
@@ -65,85 +56,50 @@ session = Session()
 TasksModel.create_table(engine)
 session.commit()
 
-def serialize_task(task):
-    return {
-        'id': task.id,
-        'title': task.title,
-        'description': task.description, 
-        'completed': task.completed
-    }
+
     
 
 
 @app.route('/task', methods=['GET'])
-def get_all_tasks():
-    tasks = db.session.query(TasksModel).all()
-    
-    if not tasks:
-        return jsonify({'message': 'No tasks found'}), 404
-    
-    tasks_list = [serialize_task(task) for task in tasks]
-    return jsonify(tasks_list)
+def get_tasks():
+    return get_all_tasks(db)
 
 @app.route('/task/<int:task_id>', methods=['GET'])
-def get_task(task_id):
-    task = session.query(TasksModel).get(task_id)  
-
-    if not task:
-        return jsonify({'message': 'Task not found'}), 404
-    
-    task_dict = serialize_task(task)
-    return jsonify(task_dict)
+def get_single_task(task_id):
+    return get_task_by_id(db, task_id)
 
 
 
 @app.route('/task', methods=['POST'])
-def create_task():
+def post_task():
     try:
         data = request.json
         if not data or 'title' not in data or 'description' not in data or 'completed' not in data:
             return jsonify({'message': 'Missing required data'}), 400
-        task = TasksModel(title=data['title'], description=data['description'], completed=data['completed'])
-        db.session.add(task)
-        db.session.commit()
-        task_dict = serialize_task(task)
-        return jsonify(task_dict), 201
+        title = data['title']
+        description = data['description']
+        completed = data['completed']
+        return create_task(db, title, description, completed)  
     except Exception as e:
         return jsonify({'message': 'Error processing request', 'error': str(e)}), 500
     
 
 @app.route('/task/<int:task_id>', methods=['PUT'])
-def update_task(task_id):
-    task = TasksModel.query.get(task_id)
-    if not task:
-        return jsonify({'message': 'Task not found'}), 404
-    
-    data = request.json
-    if 'title' in data:
-        task.title = data['title']
-    if 'description' in data:
-        task.description = data['description']
-    if 'completed' in data:
-        task.completed = data['completed']
-    
+def put_task(task_id):
     try:
-        db.session.commit() 
-    except SQLAlchemyError as e:
-        db.session.rollback()
-        return jsonify({'message': str(e)}), 500
-    
-    task_dict = serialize_task(task)
-    return jsonify(task_dict)
+        data = request.json
+        return update_task(db, task_id, data)  
+    except Exception as e:
+        return jsonify({'message': 'Error processing request', 'error': str(e)}), 500
 
 @app.route('/task/<int:task_id>', methods=['DELETE'])
-def delete_task(task_id):
-    task = TasksModel.query.get(task_id)
-    if not task:
-        return jsonify({'message': 'Task not found'}), 404
-    
-    db.session.delete(task)
-    db.session.commit()
-    return jsonify({'message': 'Task Deleted'}), 204
+def delete_single_task(task_id):
+    return delete_task(db, task_id) 
+
+
+@app.route('/task', methods=['DELETE'])
+def delete_all_tasks_route():
+    return delete_all_tasks(db)
 
 session.close()
 
